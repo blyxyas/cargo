@@ -17,6 +17,7 @@ mod explicit_bin_with_git;
 mod formats_source;
 mod fossil_autodetect;
 mod git_autodetect;
+mod git_default_branch;
 mod git_ignore_exists_no_conflicting_entries;
 mod ignores_failure_to_format_source;
 mod inferred_bin_with_git;

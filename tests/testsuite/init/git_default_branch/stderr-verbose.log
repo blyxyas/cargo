@@ -1,0 +1,6 @@
+warning: using 'master' as the name for the initial branch. This default branch name is
+warning: subject to change. To configure the initial branch name to use in all of your
+warning: new repositories, which will suppress this warning, call:
+warning: 
+warning: 		git config --global init.defaultBranch <name>
+     Created library package

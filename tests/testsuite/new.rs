@@ -503,10 +503,21 @@ or change the name in Cargo.toml with:
 
 #[cargo_test]
 fn git_default_branch() {
+    // If no init.defaultBranch is detected and is verbose
+
+    cargo_process("new x -v").with_stderr(r#"[WARNING] using 'master' as the name for the initial branch. This default branch name is
+[WARNING] subject to change. To configure the initial branch name to use in all of your
+[WARNING] new repositories, which will suppress this warning, call:
+[WARNING] 
+[WARNING] <tab><tab>git config --global init.defaultBranch <name>
+[CREATED] binary (application) `x` package"#).run();
+
     // Check for init.defaultBranch support.
     create_default_gitconfig();
 
-    cargo_process("new foo").run();
+    cargo_process("new foo -v")
+        .with_stderr("[CREATED] binary (application) `foo` package")
+        .run();
     let repo = git2::Repository::open(paths::root().join("foo")).unwrap();
     let head = repo.find_reference("HEAD").unwrap();
     assert_eq!(head.symbolic_target().unwrap(), "refs/heads/master");

@@ -436,7 +436,7 @@ pub fn new(opts: &NewOptions, config: &Config) -> CargoResult<()> {
 
     check_path(path, &mut config.shell())?;
 
-    let is_bin = opts.kind.is_bin();
+    let is_bin: bool = opts.kind.is_bin();
 
     let name = get_name(path, opts)?;
     check_name(name, opts.name.is_none(), is_bin, &mut config.shell())?;
@@ -458,6 +458,7 @@ pub fn new(opts: &NewOptions, config: &Config) -> CargoResult<()> {
             path.display()
         )
     })?;
+
     Ok(())
 }
 
@@ -707,6 +708,19 @@ fn init_vcs(path: &Path, vcs: VersionControl, config: &Config) -> CargoResult<()
                 // Temporary fix to work around bug in libgit2 when creating a
                 // directory in the root of a posix filesystem.
                 // See: https://github.com/libgit2/libgit2/issues/5130
+                if let Ok(cfg) = git2::Config::open_default() {
+                    if let Err(_) = cfg.get_string("init.defaultBranch") {
+                        // No defined default branch
+                        config.shell().verbose(|shell| Ok({
+							shell.warn("using 'master' as the name for the initial branch. This default branch name is")?;
+							shell.warn("subject to change. To configure the initial branch name to use in all of your")?;
+							shell.warn("new repositories, which will suppress this warning, call:")?;
+							shell.warn("")?;
+							shell.warn("\t\tgit config --global init.defaultBranch <name>")?;
+						}))?;
+                    }
+                }
+
                 paths::create_dir_all(path)?;
                 GitRepo::init(path, config.cwd())?;
             }
