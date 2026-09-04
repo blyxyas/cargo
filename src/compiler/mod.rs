@@ -190,8 +190,16 @@ fn compile<'gctx>(
     exec: &Arc<dyn Executor>,
     force_rebuild: bool,
 ) -> CargoResult<()> {
-    if !build_runner.compiled.insert(unit.clone()) {
-        return Ok(());
+    dbg!(unit.inner.pkg.name());
+    // Si es antiguo, no se hace nada.
+    let already_analyzed = !build_runner.analyzed.insert(unit.clone());
+
+    if already_analyzed {
+        if !build_runner.compiled.insert(unit.clone()) {
+            return Ok(());
+        }
+    } else {
+        // We're analyzing a not-yet-compiled unit
     }
 
     let lock = if build_runner.bcx.gctx.cli_unstable().fine_grain_locking {
@@ -237,7 +245,12 @@ fn compile<'gctx>(
                 let work = if unit.mode.is_doc() || unit.mode.is_doc_scrape() {
                     rustdoc(build_runner, unit)?
                 } else {
-                    rustc(build_runner, unit, exec)?
+                    if dbg!(already_analyzed) {
+                        rustc(build_runner, unit, exec)?
+                    } else {
+                        rustc(build_runner, unit, exec)?
+
+                    }
                 };
                 work.then(link_targets(build_runner, unit, false)?)
             } else {

@@ -51,7 +51,7 @@ impl fmt::Display for UnitIndex {
 /// all that out.
 #[derive(Clone, PartialOrd, Ord)]
 pub struct Unit {
-    inner: Rc<UnitInner>,
+    pub inner: Rc<UnitInner>,
 }
 
 /// Internal fields of `Unit` which `Unit` will dereference to.
