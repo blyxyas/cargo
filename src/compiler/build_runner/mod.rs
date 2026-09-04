@@ -58,6 +58,7 @@ pub struct BuildRunner<'a, 'gctx> {
     /// A unit may appear in the job graph multiple times as a dependency of
     /// multiple packages, but it only needs to run once.
     pub compiled: HashSet<Unit>,
+    pub analyzed: HashSet<Unit>,
     /// Linking information for each `Unit`.
     /// See `build_map` for details.
     pub build_scripts: HashMap<Unit, Arc<BuildScripts>>,
@@ -124,6 +125,7 @@ impl<'a, 'gctx> BuildRunner<'a, 'gctx> {
             mtime_cache: HashMap::default(),
             checksum_cache: HashMap::default(),
             compiled: HashSet::default(),
+            analyzed: HashSet::default(),
             build_scripts: HashMap::default(),
             build_explicit_deps: HashMap::default(),
             jobserver,
