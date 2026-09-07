@@ -190,7 +190,6 @@ fn compile<'gctx>(
     exec: &Arc<dyn Executor>,
     force_rebuild: bool,
 ) -> CargoResult<()> {
-    dbg!(unit.inner.pkg.name());
     // Si es antiguo, no se hace nada.
     let already_analyzed = !build_runner.analyzed.insert(unit.clone());
 
@@ -241,15 +240,15 @@ fn compile<'gctx>(
         } else {
             let force = exec.force_rebuild(unit) || force_rebuild;
             let mut job = fingerprint::prepare_target(build_runner, unit, force)?;
-            job.before(if job.freshness().is_dirty() {
+            job.before(if dbg!(job.freshness().is_dirty()) {
                 let work = if unit.mode.is_doc() || unit.mode.is_doc_scrape() {
                     rustdoc(build_runner, unit)?
                 } else {
-                    if dbg!(already_analyzed) {
-                        rustc(build_runner, unit, exec)?
+                    if already_analyzed {
+                        rustc(build_runner, unit, exec, false)?
                     } else {
-                        rustc(build_runner, unit, exec)?
-
+                        // We have to analyze first
+                        rustc(build_runner, unit, exec, true)?
                     }
                 };
                 work.then(link_targets(build_runner, unit, false)?)
@@ -324,8 +323,9 @@ fn rustc(
     build_runner: &mut BuildRunner<'_, '_>,
     unit: &Unit,
     exec: &Arc<dyn Executor>,
+    analysis_run: bool,
 ) -> CargoResult<Work> {
-    let mut rustc = prepare_rustc(build_runner, unit)?;
+    let mut rustc = prepare_rustc(build_runner, unit, analysis_run)?;
 
     let name = unit.pkg.name();
 
@@ -355,6 +355,8 @@ fn rustc(
     let package_id = unit.pkg.package_id();
     let target = Target::clone(&unit.target);
     let mode = unit.mode;
+
+    if analysis_run {}
 
     exec.init(build_runner, unit);
     let exec = exec.clone();
@@ -831,7 +833,11 @@ where
 /// This builds a static view of the invocation. Flags depending on the
 /// completion of other units will be added later in runtime, such as flags
 /// from build scripts.
-fn prepare_rustc(build_runner: &BuildRunner<'_, '_>, unit: &Unit) -> CargoResult<ProcessBuilder> {
+fn prepare_rustc(
+    build_runner: &BuildRunner<'_, '_>,
+    unit: &Unit,
+    analysis_run: bool,
+) -> CargoResult<ProcessBuilder> {
     let gctx = build_runner.bcx.gctx;
     let is_primary = build_runner.is_primary_package(unit);
     let is_workspace = build_runner.bcx.ws.is_member(&unit.pkg);
@@ -856,6 +862,10 @@ fn prepare_rustc(build_runner: &BuildRunner<'_, '_>, unit: &Unit) -> CargoResult
     add_cap_lints(build_runner.bcx, unit, &mut base);
     if let Some(args) = build_runner.bcx.extra_args_for(unit) {
         base.args(args);
+    }
+
+    if analysis_run {
+        base.args(&["-Zcrate-attr=allow(clippy::hola)"]);
     }
     base.args(&unit.rustflags);
     if gctx.cli_unstable().binary_dep_depinfo {

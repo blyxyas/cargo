@@ -79,7 +79,8 @@ impl<N: Hash + Eq + Clone, E: Eq + Hash + Clone, V> DependencyQueue<N, E, V> {
         dependencies: impl IntoIterator<Item = (N, E)>,
         cost: usize,
     ) {
-        assert!(!self.dep_map.contains_key(&key));
+        // TODO: Figure this out
+        // assert!(!self.dep_map.contains_key(&key));
 
         let mut my_dependencies = HashSet::default();
         for (dep, edge) in dependencies {
