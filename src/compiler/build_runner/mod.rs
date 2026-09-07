@@ -177,6 +177,7 @@ impl<'a, 'gctx> BuildRunner<'a, 'gctx> {
             .gctx
             .acquire_package_cache_lock(CacheLockMode::Shared)?;
         let mut queue = JobQueue::new(self.bcx);
+        let mut queue2 = JobQueue::new(self.bcx);
         self.lto = super::lto::generate(self.bcx)?;
         self.prepare_units()?;
         self.prepare()?;
@@ -194,6 +195,7 @@ impl<'a, 'gctx> BuildRunner<'a, 'gctx> {
         for unit in &self.bcx.roots {
             let force_rebuild = self.bcx.build_config.force_rebuild;
             super::compile(&mut self, &mut queue, unit, exec, force_rebuild)?;
+            super::compile(&mut self, &mut queue2, unit, exec, force_rebuild)?;
         }
 
         // Now that we've got the full job queue and we've done all our
@@ -208,6 +210,14 @@ impl<'a, 'gctx> BuildRunner<'a, 'gctx> {
 
         // Now that we've figured out everything that we're going to do, do it!
         queue.execute(&mut self)?;
+
+        // Second pass
+        for unit in &self.bcx.roots {
+            let force_rebuild = self.bcx.build_config.force_rebuild;
+            super::compile(&mut self, &mut queue2, unit, exec, force_rebuild)?;
+        }
+
+        queue2.execute(&mut self)?;
 
         // Add `OUT_DIR` to env vars if unit has a build script.
         let units_with_build_script = &self
